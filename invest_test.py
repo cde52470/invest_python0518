@@ -3,12 +3,29 @@ from dotenv import load_dotenv
 from alpha_vantage.timeseries import TimeSeries
 import pandas as pd
 import pandas_ta as ta
+import openai
+
+from flask import Flask, request, abort
+from linebot import (
+    LineBotApi, WebhookHandler
+)
+from linebot.exceptions import (
+    InvalidSignatureError
+)
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
+)
+app = Flask(__name__)
+
 
 # 加載環境變量
 load_dotenv()
 
 # Alpha Vantage API 關鍵字
 alpha_client = TimeSeries(key=os.getenv('ALPHA_VANTAGE_API_KEY'), output_format='pandas')
+openai_api_key = os.getenv('OPENAI_API_KEY')
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
 def get_stock_data(symbol):
     # 從Alpha Vantage獲取股票價格數據
@@ -26,7 +43,82 @@ def calculate_technical_indicators(close_prices):
     bbands = ta.bbands(close_prices, length=20, std=2)
     return rsi, sma, bbands
 
-def main():
+
+def consult_chatgpt(rsi, sma, bbu, bbl):
+    prompt = f"给定以下股票技术指标，请评估此股票是否值得购买（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上轨: {bbu:.12f}, 布林带下轨: {bbl:.12f}。"
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # 确保使用的是聊天模型
+            messages=[{"role": "user", "content": prompt}],
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return "生成建议时出错。"
+
+@app.route("/callback", methods=['POST'])
+def callback():
+    # 获取 X-Line-Signature header 值
+    signature = request.headers['X-Line-Signature']
+
+    # 获取请求体
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
+
+    # 处理 Webhook 体
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        print("Invalid signature. Please check your channel access token/channel secret.")
+        abort(400)
+
+    return 'OK'
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    text = event.message.text
+    if "分析股票" in text:
+        parts = text.split("分析股票")
+        if len(parts) > 1 and parts[1].strip():
+            ticker = parts[1].strip().upper()
+            try:
+                close_prices = get_stock_data(ticker)
+                indicators = calculate_technical_indicators(close_prices)
+                rsi_value = indicators.rsi.iloc[-1] if not indicators.rsi.empty else None
+                sma_value = indicators.sma.iloc[-1] if not indicators.sma.empty else None
+                bbu_value = indicators.bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in indicators.bbands else None
+                bbl_value = indicators.bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in indicators.bbands else None
+
+                response_text = f"股票 {ticker} 的技术指标分析结果:\n" \
+                                f"RSI: {rsi_value:.2f}\n" \
+                                f"日均线 (SMA): {sma_value:.3f}\n" \
+                                f"布林带上轨: {bbu_value:.12f}\n" \
+                                f"布林带下轨: {bbl_value:.12f}\n"
+
+                advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+                response_text += "\n根据 ChatGPT 的评估：" + advice
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=response_text)
+                )
+            except Exception as e:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=f"无法获取股票数据或处理过程中出错：{str(e)}")
+                )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="请输入正确的股票代码，格式为：分析股票 股票代码")
+            )
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="欢迎使用股票分析机器人，请输入正确的格式以进行股票分析，例如：分析股票 AAPL")
+        )
+#def main():
     symbol = input("請輸入股票代碼：")
     close_prices = get_stock_data(symbol)
     rsi, sma, bbands = calculate_technical_indicators(close_prices)
@@ -41,7 +133,25 @@ def main():
     print(f"RSI: {rsi_value:.2f}")
     print(f"日均線 (SMA): {sma_value:.3f}")
     print(f"布林帶上軌: {bbu_value:.12f}")
-    print(f"布林帶下軌: {bbl_value:.12f}")
+    print(f"布林帶下軌: {bbl_value:.12f}\n")
+
+    # 咨詢 ChatGPT
+    # advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+    # print(f"根據 ChatGPT 的評估，此股票的購買評分為: \n{advice}")
+    advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+    explanation = advice[:-1]  # 移除原始评分句子
+    score = advice.split("。")[-2]  # 从最后第二句获取评分句子
+
+    print("以下為系統的評估與分析:")
+    print(explanation)  # 输出评价解释部分
+    print("\n" + score + "。")  # 输出评分，前加空行
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    # 这里简单回复收到的消息
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text))
 
 if __name__ == "__main__":
-    main()
+    app.run()
