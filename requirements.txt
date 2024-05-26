@@ -5,3 +5,4 @@ pandas
 pandas-ta
 openai
 python-dotenv
+alpha_vantage
