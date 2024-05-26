@@ -4,3 +4,4 @@ line-bot-sdk
 pandas
 pandas-ta
 openai
+python-dotenv
