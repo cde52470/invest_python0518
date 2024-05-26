@@ -27,8 +27,8 @@ load_dotenv()
 # Alpha Vantage API 關鍵字
 alpha_client = TimeSeries(key=os.getenv('ALPHA_VANTAGE_API_KEY'), output_format='pandas')
 openai_api_key = os.getenv('OPENAI_API_KEY')
-line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
-handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
+line_bot_api = LineBotApi(os.getenv('CHANNEL_ACCESS_TOKEN'))
+handler = WebhookHandler(os.getenv('CHANNEL_SECRET'))
 
 def get_stock_data(symbol):
     # 從Alpha Vantage獲取股票價格數據
