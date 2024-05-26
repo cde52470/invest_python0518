@@ -76,11 +76,11 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    text = event.message.text
-    if "分析股票" in text:
-        parts = text.split("分析股票")
-        if len(parts) > 1 and parts[1].strip():
-            ticker = parts[1].strip().upper()
+    text = event.message.text.strip()
+    if text.startswith("分析股票"):
+        parts = text.split()
+        if len(parts) >= 2:
+            ticker = parts[1].upper()
             try:
                 close_prices = get_stock_data(ticker)
                 indicators = calculate_technical_indicators(close_prices)
@@ -117,6 +117,9 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text="欢迎使用股票分析机器人，请输入正确的格式以进行股票分析，例如：分析股票 AAPL")
         )
+
+
+
 #def main():
     symbol = input("請輸入股票代碼：")
     close_prices = get_stock_data(symbol)
