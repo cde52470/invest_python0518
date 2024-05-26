@@ -1,5 +1,6 @@
-flask==2.0.1
-pandas==1.2.3
-line-bot-sdk==1.19.0
-pandas_ta==0.2.45b
-openai==0.10.2
+flask
+gunicorn
+line-bot-sdk
+pandas
+pandas-ta
+openai
