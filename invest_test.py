@@ -4,6 +4,7 @@ from alpha_vantage.timeseries import TimeSeries
 import pandas as pd
 import pandas_ta as ta
 import openai
+import logging
 
 from flask import Flask, request, abort
 from linebot import (
@@ -15,7 +16,9 @@ from linebot.exceptions import (
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
 )
+
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 # 加載環境變量
@@ -59,18 +62,14 @@ def consult_chatgpt(rsi, sma, bbu, bbl):
 
 @app.route("/callback", methods=['POST'])
 def callback():
-    # 获取 X-Line-Signature header 值
     signature = request.headers['X-Line-Signature']
-
-    # 获取请求体
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
+    logging.info(f"Received a request with body: {body}")
 
-    # 处理 Webhook 体
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
-        print("Invalid signature. Please check your channel access token/channel secret.")
+        logging.error("Invalid signature.")
         abort(400)
 
     return 'OK'
@@ -154,4 +153,5 @@ def handle_message(event):
         TextSendMessage(text=event.message.text))
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.getenv("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

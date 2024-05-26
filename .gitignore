@@ -1,7 +1,0 @@
-__pycache__/
-.env
-node_modules/
-*.pyc
-instance/
-.DS_Store
-.vscode/
