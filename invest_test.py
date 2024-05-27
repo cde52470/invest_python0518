@@ -60,19 +60,30 @@ def consult_chatgpt(rsi, sma, bbu, bbl):
         print(f"An error occurred: {str(e)}")
         return "生成建议时出错。"
 
-@app.route("/callback", methods=['POST'])
+
+
+@app.route("/callback", methods=['GET', 'POST'])
 def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    logging.info(f"Received a request with body: {body}")
+    if request.method == 'POST':
+        signature = request.headers.get('X-Line-Signature', '')
+        body = request.get_data(as_text=True)
+        logging.info(f"Received a POST request with body: {body}")
 
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        logging.error("Invalid signature.")
-        abort(400)
+        try:
+            handler.handle(body, signature)
+        except InvalidSignatureError:
+            logging.error("Invalid signature.")
+            abort(400)
 
-    return 'OK'
+        return 'OK'
+    else:
+        return 'This is GET response from /callback'
+
+@app.route('/')
+def index():
+    return 'Hello, this is the main page of the app.'
+
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
