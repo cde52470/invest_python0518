@@ -62,36 +62,29 @@ def consult_chatgpt(rsi, sma, bbu, bbl):
 
 
 
-@app.route("/callback", methods=['GET', 'POST'])
+@app.route("/callback", methods=['POST'])
 def callback():
-    if request.method == 'POST':
-        signature = request.headers.get('X-Line-Signature', '')
-        body = request.get_data(as_text=True)
-        logging.info(f"Received a POST request with body: {body}")
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    app.logger.info(f"Received a request with body: {body}")
 
-        try:
-            handler.handle(body, signature)
-        except InvalidSignatureError:
-            logging.error("Invalid signature.")
-            abort(400)
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
+        abort(400)
 
-        return 'OK'
-    else:
-        return 'This is GET response from /callback'
-
-@app.route('/')
-def index():
-    return 'Hello, this is the main page of the app.'
-
-
+    return 'OK'
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text.strip()
+    app.logger.info(f"Handling message: {text}")  # 日志输出接收到的消息内容
     if text.startswith("分析股票"):
         parts = text.split()
         if len(parts) >= 2:
             ticker = parts[1].upper()
+            app.logger.info(f"Analyzing ticker: {ticker}")  # 日志输出正在分析的股票代码
             try:
                 close_prices = get_stock_data(ticker)
                 indicators = calculate_technical_indicators(close_prices)
@@ -114,20 +107,27 @@ def handle_message(event):
                     TextSendMessage(text=response_text)
                 )
             except Exception as e:
+                error_message = f"无法获取股票数据或处理过程中出错：{str(e)}"
+                app.logger.error(error_message)  # 日志输出错误信息
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text=f"无法获取股票数据或处理过程中出错：{str(e)}")
+                    TextSendMessage(text=error_message)
                 )
         else:
+            error_message = "请输入正确的股票代码，格式为：分析股票 股票代码"
+            app.logger.error(error_message)  # 日志输出错误信息
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="请输入正确的股票代码，格式为：分析股票 股票代码")
+                TextSendMessage(text=error_message)
             )
     else:
+        welcome_message = "欢迎使用股票分析机器人，请输入正确的格式以进行股票分析，例如：分析股票 AAPL"
+        app.logger.info(welcome_message)  # 日志输出欢迎信息
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="欢迎使用股票分析机器人，请输入正确的格式以进行股票分析，例如：分析股票 AAPL")
+            TextSendMessage(text=welcome_message)
         )
+
 
 
 
