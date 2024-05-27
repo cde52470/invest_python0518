@@ -88,6 +88,8 @@ def handle_message(event):
             try:
                 close_prices = get_stock_data(ticker)
                 indicators = calculate_technical_indicators(close_prices)
+                rsi_value, sma_value, bbands = indicators  # 正确解包元组
+                
                 rsi_value = indicators.rsi.iloc[-1] if not indicators.rsi.empty else None
                 sma_value = indicators.sma.iloc[-1] if not indicators.sma.empty else None
                 bbu_value = indicators.bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in indicators.bbands else None
@@ -161,10 +163,10 @@ def handle_message(event):
 
 # @handler.add(MessageEvent, message=TextMessage)
 # def handle_message(event):
-#     # 这里简单回复收到的消息
-#     line_bot_api.reply_message(
-#         event.reply_token,
-#         TextSendMessage(text=event.message.text))
+    # 这里简单回复收到的消息
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text))
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
