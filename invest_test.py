@@ -131,33 +131,33 @@ def handle_message(event):
 
 
 
-#def main():
-    symbol = input("請輸入股票代碼：")
-    close_prices = get_stock_data(symbol)
-    rsi, sma, bbands = calculate_technical_indicators(close_prices)
+# def main():
+    # symbol = input("請輸入股票代碼：")
+    # close_prices = get_stock_data(symbol)
+    # rsi, sma, bbands = calculate_technical_indicators(close_prices)
     
-    # 檢查並格式化輸出
-    rsi_value = rsi.iloc[-1] if not rsi.empty else None
-    sma_value = sma.iloc[-1] if not sma.empty else None
-    bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
-    bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
+    # # 檢查並格式化輸出
+    # rsi_value = rsi.iloc[-1] if not rsi.empty else None
+    # sma_value = sma.iloc[-1] if not sma.empty else None
+    # bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
+    # bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
     
-    print(f"股票 {symbol} 的技術指標分析結果:")
-    print(f"RSI: {rsi_value:.2f}")
-    print(f"日均線 (SMA): {sma_value:.3f}")
-    print(f"布林帶上軌: {bbu_value:.12f}")
-    print(f"布林帶下軌: {bbl_value:.12f}\n")
+    # print(f"股票 {symbol} 的技術指標分析結果:")
+    # print(f"RSI: {rsi_value:.2f}")
+    # print(f"日均線 (SMA): {sma_value:.3f}")
+    # print(f"布林帶上軌: {bbu_value:.12f}")
+    # print(f"布林帶下軌: {bbl_value:.12f}\n")
 
-    # 咨詢 ChatGPT
+    # # 咨詢 ChatGPT
+    # # advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+    # # print(f"根據 ChatGPT 的評估，此股票的購買評分為: \n{advice}")
     # advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-    # print(f"根據 ChatGPT 的評估，此股票的購買評分為: \n{advice}")
-    advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-    explanation = advice[:-1]  # 移除原始评分句子
-    score = advice.split("。")[-2]  # 从最后第二句获取评分句子
+    # explanation = advice[:-1]  # 移除原始评分句子
+    # score = advice.split("。")[-2]  # 从最后第二句获取评分句子
 
-    print("以下為系統的評估與分析:")
-    print(explanation)  # 输出评价解释部分
-    print("\n" + score + "。")  # 输出评分，前加空行
+    # print("以下為系統的評估與分析:")
+    # print(explanation)  # 输出评价解释部分
+    # print("\n" + score + "。")  # 输出评分，前加空行
 
 # @handler.add(MessageEvent, message=TextMessage)
 # def handle_message(event):
