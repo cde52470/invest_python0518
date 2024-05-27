@@ -89,11 +89,8 @@ def handle_message(event):
                 close_prices = get_stock_data(ticker)
                 indicators = calculate_technical_indicators(close_prices)
                 rsi_value, sma_value, bbands = indicators  # 正确解包元组
-                
-                rsi_value = indicators.rsi.iloc[-1] if not indicators.rsi.empty else None
-                sma_value = indicators.sma.iloc[-1] if not indicators.sma.empty else None
-                bbu_value = indicators.bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in indicators.bbands else None
-                bbl_value = indicators.bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in indicators.bbands else None
+                bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
+                bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
                 response_text = f"股票 {ticker} 的技术指标分析结果:\n" \
                                 f"RSI: {rsi_value:.2f}\n" \
@@ -129,6 +126,7 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=welcome_message)
         )
+
 
 
 
