@@ -80,11 +80,13 @@ def callback():
 def handle_message(event):
     text = event.message.text.strip()
     app.logger.info(f"Handling message: {text}")  # 日志输出接收到的消息内容
+
     if text.startswith("分析股票"):
         parts = text.split()
         if len(parts) >= 2:
             ticker = parts[1].upper()
             app.logger.info(f"Analyzing ticker: {ticker}")  # 日志输出正在分析的股票代码
+
             try:
                 close_prices = get_stock_data(ticker)
                 rsi, sma, bbands = calculate_technical_indicators(close_prices)  # 确保这里正确解包
@@ -93,14 +95,14 @@ def handle_message(event):
                 bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
                 bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
-                response_text = f"股票 {ticker} 的技术指标分析结果:\n" \
-                                f"RSI: {rsi_value:.2f}\n" \
-                                f"日均线 (SMA): {sma_value:.3f}\n" \
-                                f"布林带上轨: {bbu_value:.12f}\n" \
-                                f"布林带下轨: {bbl_value:.12f}\n"
+                response_text = (f"股票 {ticker} 的技术指标分析结果:\n"
+                                 f"RSI: {rsi_value:.2f}\n"
+                                 f"日均线 (SMA): {sma_value:.3f}\n"
+                                 f"布林带上轨: {bbu_value:.12f}\n"
+                                 f"布林带下轨: {bbl_value:.12f}")
 
                 advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-                response_text += "\n根据 ChatGPT 的评估：" + advice
+                response_text += f"\n根据 ChatGPT 的评估：{advice}"
 
                 line_bot_api.reply_message(
                     event.reply_token,
@@ -127,6 +129,7 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=welcome_message)
         )
+
 
 
 
