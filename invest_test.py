@@ -161,6 +161,7 @@ def handle_message(event):
     # print(explanation)  # 输出评价解释部分
     # print("\n" + score + "。")  # 输出评分，前加空行
 
+
 # @handler.add(MessageEvent, message=TextMessage)
 # def handle_message(event):
     # 这里简单回复收到的消息
