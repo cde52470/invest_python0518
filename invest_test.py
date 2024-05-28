@@ -87,8 +87,9 @@ def handle_message(event):
             app.logger.info(f"Analyzing ticker: {ticker}")  # 日志输出正在分析的股票代码
             try:
                 close_prices = get_stock_data(ticker)
-                indicators = calculate_technical_indicators(close_prices)
-                rsi_value, sma_value, bbands = indicators  # 正确解包元组
+                rsi, sma, bbands = calculate_technical_indicators(close_prices)  # 确保这里正确解包
+                rsi_value = rsi.iloc[-1] if not rsi.empty else None
+                sma_value = sma.iloc[-1] if not sma.empty else None
                 bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
                 bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
@@ -126,6 +127,7 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=welcome_message)
         )
+
 
 
 
