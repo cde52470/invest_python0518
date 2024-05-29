@@ -48,7 +48,7 @@ def calculate_technical_indicators(close_prices):
 
 
 def consult_chatgpt(rsi, sma, bbu, bbl):
-    prompt = f"给定以下股票技术指標，請評估此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}。"
+    prompt = f"给定以下股票技术指標，請評分此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}。\n請先給出評分後，換行講述其原因。"
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # 确保使用的是聊天模型
@@ -99,10 +99,10 @@ def handle_message(event):
                                  f"RSI: {rsi_value:.2f}\n"
                                  f"日均线 (SMA): {sma_value:.3f}\n"
                                  f"布林带上轨: {bbu_value:.12f}\n"
-                                 f"布林带下轨: {bbl_value:.12f}")
+                                 f"布林带下轨: {bbl_value:.12f}\n")
 
                 advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-                response_text += f"\n根據 ChatGPT 的評估：{advice}"
+                response_text += f"\n根據 ChatGPT 的評估：\n{advice}"
 
                 line_bot_api.reply_message(
                     event.reply_token,
