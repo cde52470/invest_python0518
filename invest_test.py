@@ -48,7 +48,7 @@ def calculate_technical_indicators(close_prices):
 
 
 def consult_chatgpt(rsi, sma, bbu, bbl):
-    prompt = f"给定以下股票技术指标，请评估此股票是否值得购买（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上轨: {bbu:.12f}, 布林带下轨: {bbl:.12f}。"
+    prompt = f"给定以下股票技术指標，請評估此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}。"
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # 确保使用的是聊天模型
@@ -58,7 +58,7 @@ def consult_chatgpt(rsi, sma, bbu, bbl):
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        return "生成建议时出错。"
+        return "Error openai。"
 
 
 
@@ -95,35 +95,35 @@ def handle_message(event):
                 bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
                 bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
-                response_text = (f"股票 {ticker} 的技术指标分析结果:\n"
+                response_text = (f"股票 {ticker} 的技术指標分析结果:\n"
                                  f"RSI: {rsi_value:.2f}\n"
                                  f"日均线 (SMA): {sma_value:.3f}\n"
                                  f"布林带上轨: {bbu_value:.12f}\n"
                                  f"布林带下轨: {bbl_value:.12f}")
 
                 advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-                response_text += f"\n根据 ChatGPT 的评估：{advice}"
+                response_text += f"\n根據 ChatGPT 的評估：{advice}"
 
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(text=response_text)
                 )
             except Exception as e:
-                error_message = f"无法获取股票数据或处理过程中出错：{str(e)}"
+                error_message = f"無法獲取股票數據或處理過程中出錯：{str(e)}"
                 app.logger.error(error_message)  # 日志输出错误信息
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(text=error_message)
                 )
         else:
-            error_message = "请输入正确的股票代码，格式为：分析股票 股票代码"
+            error_message = "請輸入正确的形式，格式为：分析股票 股票代碼(英文代碼)"
             app.logger.error(error_message)  # 日志输出错误信息
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=error_message)
             )
     else:
-        welcome_message = "欢迎使用股票分析机器人，请输入正确的格式以进行股票分析，例如：分析股票 AAPL"
+        welcome_message = "請輸入正确的格式以進行股票分析。\n 例如：分析股票 AAPL"
         app.logger.info(welcome_message)  # 日志输出欢迎信息
         line_bot_api.reply_message(
             event.reply_token,
@@ -165,11 +165,3 @@ if __name__ == "__main__":
     # print("以下為系統的評估與分析:")
     # print(explanation)  # 输出评价解释部分
     # print("\n" + score + "。")  # 输出评分，前加空行
-
-
-# @handler.add(MessageEvent, message=TextMessage)
-# def handle_message(event):
-    # 这里简单回复收到的消息
-    # line_bot_api.reply_message(
-    #     event.reply_token,
-    #     TextSendMessage(text=event.message.text))
