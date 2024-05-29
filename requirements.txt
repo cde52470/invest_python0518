@@ -3,6 +3,6 @@ gunicorn
 line-bot-sdk
 pandas
 pandas-ta
-openai
+openai==0.28
 python-dotenv
 alpha_vantage
