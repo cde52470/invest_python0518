@@ -95,15 +95,11 @@ def handle_message(event):
                 bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
                 bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
-                response_text = (f"股票 {ticker} 的技术指標分析结果:\n"
+                response_text = (f"股票 {ticker} 的技術指標分析结果:\n"
                                  f"RSI: {rsi_value:.2f}\n"
-                                 f"日均线 (SMA): {sma_value:.3f}\n"
-                                 f"布林带上轨: {bbu_value:.12f}\n"
-                                 f"布林带下轨: {bbl_value:.12f}\n")
-
-                advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-                response_text += f"\n根據 ChatGPT 的評估：\n{advice}"
-
+                                 f"日均線 (SMA): {sma_value:.3f}\n"
+                                 f"布林带上軌: {bbu_value:.12f}\n"
+                                 f"布林带下軌: {bbl_value:.12f}")
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(text=response_text)
@@ -122,8 +118,43 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text=error_message)
             )
+    elif text.startswith("股票評估"):
+        parts = text.split()
+        if len(parts) >= 2:
+            ticker = parts[1].upper()
+            app.logger.info(f"Analyzing ticker: {ticker}")  # 日志输出正在分析的股票代码
+
+            try:
+                close_prices = get_stock_data(ticker)
+                rsi, sma, bbands = calculate_technical_indicators(close_prices)  # 确保这里正确解包
+                rsi_value = rsi.iloc[-1] if not rsi.empty else None
+                sma_value = sma.iloc[-1] if not sma.empty else None
+                bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
+                bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
+
+                advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+                response_text = f"根據 ChatGPT 的評估：\n{advice}"
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=response_text)
+                )
+            except Exception as e:
+                error_message = f"無法獲取股票數據或處理過程中出錯：{str(e)}"
+                app.logger.error(error_message)  # 日志输出错误信息
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=error_message)
+                )
+        else:
+            error_message = "請輸入正确的形式，格式为：股票評估 股票代碼(英文代碼)"
+            app.logger.error(error_message)  # 日志输出错误信息
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=error_message)
+            )
     else:
-        welcome_message = "請輸入正确的格式以進行股票分析。\n 例如：分析股票 AAPL"
+        welcome_message = "請輸入正确的格式以進行股票分析。\n 例如：股票評估 AAPL"
         app.logger.info(welcome_message)  # 日志输出欢迎信息
         line_bot_api.reply_message(
             event.reply_token,
