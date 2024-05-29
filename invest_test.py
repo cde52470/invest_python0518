@@ -50,13 +50,12 @@ def calculate_technical_indicators(close_prices):
 def consult_chatgpt(rsi, sma, bbu, bbl):
     prompt = f"给定以下股票技术指标，请评估此股票是否值得购买（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上轨: {bbu:.12f}, 布林带下轨: {bbl:.12f}。"
     try:
-        openai.api_key = os.getenv("OPENAI_API_KEY")  # 确保API密钥已正确设置
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",  # 确保使用的是合适的模型
-            prompt=prompt,
-            max_tokens=150  # 根据需要设置适当的最大令牌数
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # 确保使用的是聊天模型
+            messages=[{"role": "user", "content": prompt}],
+            api_key=os.getenv("OPENAI_API_KEY")
         )
-        return response['choices'][0]['text'].strip()  # 获取并返回响应文本，注意这里是 'text' 而非 'message' 或 'content'
+        return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return "生成建议时出错。"
