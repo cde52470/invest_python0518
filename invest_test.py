@@ -5,6 +5,8 @@ import pandas as pd
 import pandas_ta as ta
 import openai
 import logging
+import sqlite3
+
 
 from flask import Flask, request, abort
 from linebot import (
@@ -46,10 +48,22 @@ def calculate_technical_indicators(close_prices):
     bbands = ta.bbands(close_prices, length=20, std=2)
     return rsi, sma, bbands
 
+def get_stock_rule(stock_number):
+    """從數據庫中獲取特定股票的規則"""
+    conn = sqlite3.connect('stock_info.db')
+    c = conn.cursor()
+    c.execute('SELECT rules FROM stock_rules WHERE stock_number = ?', (stock_number,))
+    rule = c.fetchone()
+    conn.close()
+    return rule[0] if rule else ""
 
-def consult_chatgpt(rsi, sma, bbu, bbl):
-    prompt = f"给定以下股票技术指標，請評分此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}。\n請先給出評分後，換行講述其原因。"
+
+def consult_chatgpt(rsi, sma, bbu, bbl, stock_number):
+    rules = get_stock_rule(stock_number)  # 獲取股票規則
+    rules_info = f"\n股票規則: {rules}" if rules else ""
+    prompt = f"给定以下股票技术指標，請評分此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}.\n{rules_info}\n請先給出評分後，換行講述其原因。"
     try:
+        
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # 确保使用的是聊天模型
             messages=[{"role": "user", "content": prompt}],
@@ -132,7 +146,7 @@ def handle_message(event):
                 bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
                 bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
 
-                advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
+                advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value, ticker)
                 response_text = f"根據 ChatGPT 的評估：\n{advice}"
 
                 line_bot_api.reply_message(
@@ -153,8 +167,40 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text=error_message)
             )
+    elif text.startswith("股票規則"):
+        parts = text.split()
+        if len(parts) >= 2:
+            ticker = parts[1].upper()
+            app.logger.info(f"Analyzing ticker: {ticker}")  # 日志输出正在分析的股票代码
+
+            try:
+                # 直接從數據庫獲取股票規則
+                stock_rules = get_stock_rule(ticker)
+                if stock_rules:
+                    response_text = f"股票 {ticker} 的規則如下：\n{stock_rules}"
+                else:
+                    response_text = f"股票 {ticker} 沒有設定特定規則。"
+                
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=response_text)
+                )
+            except Exception as e:
+                error_message = f"無法獲取股票 {ticker} 的規則：{str(e)}"
+                app.logger.error(error_message)  # 日志输出错误信息
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text=error_message)
+                )
+        else:
+            error_message = "請輸入正确的形式，格式为：股票規則 股票代碼(英文代碼)"
+            app.logger.error(error_message)  # 日志输出错误信息
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=error_message)
+            )
     else:
-        welcome_message = "請輸入正确的格式以進行股票分析。\n 例如：股票評估 AAPL"
+        welcome_message = "請輸入正确的格式以進行股票分析。\n 例如：股票分析 AAPL、股票評估 AAPL"
         app.logger.info(welcome_message)  # 日志输出欢迎信息
         line_bot_api.reply_message(
             event.reply_token,
@@ -166,33 +212,3 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 
-
-
-
-# def main():
-    # symbol = input("請輸入股票代碼：")
-    # close_prices = get_stock_data(symbol)
-    # rsi, sma, bbands = calculate_technical_indicators(close_prices)
-    
-    # # 檢查並格式化輸出
-    # rsi_value = rsi.iloc[-1] if not rsi.empty else None
-    # sma_value = sma.iloc[-1] if not sma.empty else None
-    # bbu_value = bbands['BBU_20_2.0'].iloc[-1] if 'BBU_20_2.0' in bbands else None
-    # bbl_value = bbands['BBL_20_2.0'].iloc[-1] if 'BBL_20_2.0' in bbands else None
-    
-    # print(f"股票 {symbol} 的技術指標分析結果:")
-    # print(f"RSI: {rsi_value:.2f}")
-    # print(f"日均線 (SMA): {sma_value:.3f}")
-    # print(f"布林帶上軌: {bbu_value:.12f}")
-    # print(f"布林帶下軌: {bbl_value:.12f}\n")
-
-    # # 咨詢 ChatGPT
-    # # advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-    # # print(f"根據 ChatGPT 的評估，此股票的購買評分為: \n{advice}")
-    # advice = consult_chatgpt(rsi_value, sma_value, bbu_value, bbl_value)
-    # explanation = advice[:-1]  # 移除原始评分句子
-    # score = advice.split("。")[-2]  # 从最后第二句获取评分句子
-
-    # print("以下為系統的評估與分析:")
-    # print(explanation)  # 输出评价解释部分
-    # print("\n" + score + "。")  # 输出评分，前加空行
