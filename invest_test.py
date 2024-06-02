@@ -61,7 +61,7 @@ def get_stock_rule(stock_number):
 def consult_chatgpt(rsi, sma, bbu, bbl, stock_number):
     rules = get_stock_rule(stock_number)  # 獲取股票規則
     rules_info = f"\n股票規則: {rules}" if rules else ""
-    prompt = f"给定以下股票技术指標，請評分此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}.\n{rules_info}\n請先給出評分後，換行講述其原因。"
+    prompt = f"给定以下股票技术指標，請評分此股票是否值得購買（0-10分）：RSI: {rsi:.2f}, SMA: {sma:.3f}, 布林带上軌: {bbu:.12f}, 布林带下軌: {bbl:.12f}.\n{rules_info}\n請先給出評分後，換行講述其原因。\n請用繁體中文回應"
     try:
         
         response = openai.ChatCompletion.create(
